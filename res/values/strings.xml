@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Colanomalous</string>
+    <string name="preview_format">Preview format</string>
+    <string name="mode">Color mode</string>
+</resources>
