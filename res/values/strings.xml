@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Colanomalous</string>
-    <string name="set_preview_size">Set preview size</string>
-    <string name="set_preview_processing_mode">Set color mode</string>
-    <string name="quit">Quit</string>
+    <string name="focus_now">Focus Now</string>
+    <string name="set_focus_mode">Set Focus Mode</string>
+    <string name="set_preview_size">Set Preview Size</string>
+    <string name="set_preview_processing_mode">Set Color Mode</string>
+    <string name="quit">Quit</string>    
 </resources>
