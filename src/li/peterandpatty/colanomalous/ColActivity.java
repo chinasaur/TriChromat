@@ -38,9 +38,13 @@ public class ColActivity extends Activity {
 		mProcessedView = new ProcessedView(this); 
 		mPreviewSurface = new PreviewSurface(this, mProcessedView);
 
-		String processingMode = preferences.getString("ProcessingMode", null);
+		String processingMode = preferences.getString("processingMode", null);
 		mProcessedView.setYUVProcessor(processingMode);
-				
+		
+		int width  = preferences.getInt("previewWidth",  0);
+		int height = preferences.getInt("previewHeight", 0);
+		mPreviewSurface.setPreviewSize(width, height);
+
 		setContentView(R.layout.main);
 		mFrame = (FrameLayout) findViewById(R.id.frame);		
 		mFrame.addView(mPreviewSurface);
@@ -132,7 +136,11 @@ public class ColActivity extends Activity {
       SharedPreferences preferences = getPreferences(MODE_PRIVATE);
       SharedPreferences.Editor editor = preferences.edit();
 
-      editor.putString("ProcessingMode", mProcessedView.getYUVProcessor().getName());
+      editor.putString("processingMode", mProcessedView.getYUVProcessor().getName());
+
+      editor.putInt("previewWidth",  mPreviewSurface.getPreviewWidth());
+      editor.putInt("previewHeight", mPreviewSurface.getPreviewHeight());
+
       editor.commit();
     }
 }
@@ -154,12 +162,9 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 		mProcessedView = processedView;
 	}
 
-	
+
 	private List<Size> supportedPreviewSizes;
-	public List<Size> getSupportedPreviewSizes() {
-		return supportedPreviewSizes;
-	}
-	
+	List<Size> getSupportedPreviewSizes() { return supportedPreviewSizes; }	
 	
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
@@ -189,67 +194,48 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 		mCamera = null;
 	}
 
-	
-	private Size previewSize;
-	public void setPreviewSize(Size previewSize) {
-		this.previewSize = previewSize;
+
+	// Apparently I can't create a new Size() without a camera instance to say mCamera.new Size().
+	// I don't get this.  But the upshot is that it's more convenient to store width and height than a Size object.
+	// This way width and height can be set before the camera is created in surfaceCreated.
+	private int previewWidth = 0, previewHeight = 0;
+	void setPreviewSize(Size previewSize) { setPreviewSize(previewSize.width, previewSize.height); }
+	void setPreviewSize(int width, int height) {
+		previewWidth  = width;
+		previewHeight = height;
 	}
-	
+	int getPreviewWidth()  { return previewWidth; }
+	int getPreviewHeight() { return previewHeight; }
+
 	
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 		mCamera.setPreviewCallback(null);
 		mCamera.stopPreview();
 		
-		// Now that the size is known, set up the camera parameters and begin the preview.
-		Camera.Parameters mParameters = mCamera.getParameters();
-		
-		if (previewSize == null) previewSize = mParameters.getPreviewSize();
-		mParameters.setPreviewSize(previewSize.width, previewSize.height);
-		mCamera.setParameters(mParameters);
-		mProcessedView.reset(previewSize);
+		// Check previewWidth and previewHeight, if invalid just use what the camera wanted
+		Camera.Parameters mParameters = mCamera.getParameters();		
+		if (previewWidth == 0 || previewHeight == 0)        setPreviewSize(mParameters.getPreviewSize());
+		if (!validPreviewSize(previewWidth, previewHeight)) setPreviewSize(mParameters.getPreviewSize());
 
+		// Set preview size, notify camera
+		mParameters.setPreviewSize(previewWidth, previewHeight);
+		mCamera.setParameters(mParameters);
+		
+		// Reset ProcessedView, notify of preview size, set callback and start camera!
+		mProcessedView.reset(mParameters.getPreviewSize());
 		mCamera.setPreviewCallback(mProcessedView);
 		mCamera.startPreview();
 	}
+
+
+	private boolean validPreviewSize(int width, int height) {
+		for (Size sps : supportedPreviewSizes)
+			if (sps.width == width && sps.height == height) return true;
+		return false;
+	}
 	
-//	private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
-//		final double ASPECT_TOLERANCE = 0.05;
-//		double targetRatio = (double) w / h;
-//		if (sizes == null)
-//			return null;
-//
-//		Size optimalSize = null;
-//		double minDiff = Double.MAX_VALUE;
-//
-//		int targetHeight = h / 10;
-//
-//		// Try to find an size match aspect ratio and size
-//		for (Size size : sizes) {
-//			double ratio = (double) size.width / size.height;
-//			if (Math.abs(ratio - targetRatio) > ASPECT_TOLERANCE)
-//				continue;
-//			if (Math.abs(size.height - targetHeight) < minDiff) {
-//				optimalSize = size;
-//				minDiff = Math.abs(size.height - targetHeight);
-//			}
-//		}
-//
-//		// Cannot find the one match the aspect ratio, ignore the requirement
-//		if (optimalSize == null) {
-//			minDiff = Double.MAX_VALUE;
-//			for (Size size : sizes) {
-//				if (Math.abs(size.height - targetHeight) < minDiff) {
-//					optimalSize = size;
-//					minDiff = Math.abs(size.height - targetHeight);
-//				}
-//			}
-//		}
-//		return optimalSize;
-//	}
-
 }
-
 
 class ProcessedView extends View implements Camera.PreviewCallback {
 	private final Paint mPaint;
@@ -282,16 +268,12 @@ class ProcessedView extends View implements Camera.PreviewCallback {
 
 	
 	private YUVProcessor mYUVProcessor;
-	void setYUVProcessor(YUVProcessor yuvProcessor) {
-		mYUVProcessor = yuvProcessor;
-	}
+	void setYUVProcessor(YUVProcessor yuvProcessor) { mYUVProcessor = yuvProcessor; }
 	YUVProcessor getYUVProcessor() { return mYUVProcessor; }
-
+	
 	
 	@Override
-	public void onPreviewFrame(byte[] data, Camera camera) {		
-		loadNV21(data);
-	}
+	public void onPreviewFrame(byte[] data, Camera camera) { loadNV21(data); }
 
 	public void loadNV21(byte[] bytearray) {
 		if (processing) return;
