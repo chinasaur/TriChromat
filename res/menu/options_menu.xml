@@ -2,6 +2,5 @@
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/select_preview_format" android:title="@string/preview_format"></item>
-    <item android:title="@string/mode" android:id="@+id/select_mode"></item>
     
 </menu>

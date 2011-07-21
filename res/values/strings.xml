@@ -2,5 +2,4 @@
 <resources>
     <string name="app_name">Colanomalous</string>
     <string name="preview_format">Preview format</string>
-    <string name="mode">Color mode</string>
 </resources>

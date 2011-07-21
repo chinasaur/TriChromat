@@ -15,56 +15,54 @@ import android.view.View;
 import android.widget.FrameLayout;
 
 import java.io.IOException;
-import java.util.List;
 
 public class ColActivity extends Activity {	
-	@Override
+	
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main);
-		FrameLayout mFrame = (FrameLayout) findViewById(R.id.frame);
 		
-		PreviewSurface mPreview = new PreviewSurface(this);
-		mFrame.addView(mPreview);
-		mFrame.addView(mPreview.mPaintView);
+		ProcessedView  mProcessedView  = new ProcessedView(this); 
+		mProcessedView.setYUVProcessor(new RGB2MG());
+		PreviewSurface mPreviewSurface = new PreviewSurface(this, mProcessedView);
+
+		setContentView(R.layout.main);
+		FrameLayout mFrame = (FrameLayout) findViewById(R.id.frame);		
+		mFrame.addView(mPreviewSurface);
+		mFrame.addView(mProcessedView);
 	}
 }
 
-class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
-	private static final String TAG = "PreviewSurface";
-	
-	private SurfaceHolder mHolder;
+class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {	
+	private final SurfaceHolder mHolder;
 	private Camera mCamera;
-	PreviewProcessor mPaintView;
-	private Size previewImageSize;
-	private int surfaceWidth;
-	private int surfaceHeight;
+	private final ProcessedView mProcessedView;
 
-	PreviewSurface(Context context) {
+	
+	PreviewSurface(Context context, ProcessedView processedView) {
 		super(context);
 
-		mPaintView = new PreviewProcessor(context);
-
-		// Install a SurfaceHolder.Callback so we get notified when the
-		// underlying surface is created and destroyed.
+		// Install a SurfaceHolder.Callback so we get notified when the underlying surface is created and destroyed.
 		mHolder = getHolder();
 		mHolder.addCallback(this);
 		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		
+		mProcessedView = processedView;
 	}
 
+	
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
-		// The Surface has been created, acquire the camera and tell it where
-		// to draw.
+		// The Surface has been created, acquire the camera and tell it where to draw.
 		mCamera = Camera.open();
 		try {
 			mCamera.setPreviewDisplay(holder);
 		} catch (IOException exception) {
 			mCamera.release();
 			mCamera = null;
-			// TODO: add more exception handling logic here
 		}
 	}
+
 	
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
@@ -82,11 +80,7 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 		mCamera.setPreviewCallback(null);
 		mCamera.stopPreview();
 		
-		surfaceWidth  = w;
-		surfaceHeight = h;
-
-		// Now that the size is known, set up the camera parameters and begin
-		// the preview.
+		// Now that the size is known, set up the camera parameters and begin the preview.
 		Camera.Parameters mParameters = mCamera.getParameters();
 
 		// This needs to be fixed to handle landscape orientation correctly.
@@ -96,14 +90,15 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 //			Size optimalSize = getOptimalPreviewSize(sizes, w, h);
 //			mParameters.setPreviewSize(optimalSize.width, optimalSize.height);
 //		}
-		previewImageSize = mParameters.getPreviewSize();
-		
-		mCamera.setPreviewCallback(mPaintView);
+		Size previewImageSize = mParameters.getPreviewSize();
+
+		mProcessedView.setPreviewImageSize(previewImageSize);
 		
 //		mCamera.setParameters(mParameters);
+		mCamera.setPreviewCallback(mProcessedView);
 		mCamera.startPreview();
 	}
-
+	
 //	private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
 //		final double ASPECT_TOLERANCE = 0.05;
 //		double targetRatio = (double) w / h;
@@ -139,84 +134,72 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 //		return optimalSize;
 //	}
 
-	public class PreviewProcessor extends View implements Camera.PreviewCallback {
-		private boolean processing;
-		private int counter;
-		private byte[] data;
-		private int[] rgb;
-		private Bitmap bmp;
-		private Paint mPaint;
+}
 
-		@Override
-		public void onPreviewFrame(byte[] data, Camera camera) {
-			loadNV21(data);
-		}
-		
-		public void loadNV21(byte[] bytearray) {
-			if (processing) return;
 
-			processing = true;
-			counter++;
+class ProcessedView extends View implements Camera.PreviewCallback {
+	private boolean processing;
+	private byte[] data;
+	private int[] rgb;
+	private final Paint mPaint;
 
-			if (data.length != bytearray.length) data = new byte[bytearray.length];
-			System.arraycopy(bytearray, 0, data, 0, bytearray.length);
-			
-			invalidate();
-		}
-		
-		public PreviewProcessor(Context context) {
-			super(context);
-			processing = false;
-			counter = 0;
-			rgb = new int[0];
-			data = new byte[0];
-			mPaint = new Paint();
-		}
-
-		@Override
-		protected void onDraw(Canvas canvas) {
-			if (data.length == 0) return;
-			
-			int w = previewImageSize.width;
-			int h = previewImageSize.height;
-			if (rgb.length != w*h) rgb = new int[w*h];
-			decodeYUV420SP_colanomalous(rgb, data, w, h);
-			bmp = Bitmap.createBitmap(rgb, w, h, Bitmap.Config.RGB_565);
-			canvas.drawBitmap(bmp, 0, 0, null);
-//			canvas.drawText(Integer.toString(counter), 50, 50, mPaint);
-			processing = false;
-		}
-
-		// TODO: Move this to JNI/JNA
-		// Copies the red channel into the blue channel!
-		public void decodeYUV420SP_colanomalous(int[] rgb, byte[] yuv420sp, int width, int height) {
-			final int frameSize = width * height;
-
-			for (int j = 0, yp = 0; j < height; j++) {
-				int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
-				for (int i = 0; i < width; i++, yp++) {
-					int y = (0xff & ((int) yuv420sp[yp])) - 16;
-					if (y < 0) y = 0;
-					if ((i & 1) == 0) {
-						v = (0xff & yuv420sp[uvp++]) - 128;
-						u = (0xff & yuv420sp[uvp++]) - 128;
-					}
-
-					int y1192 = 1192 * y;
-					int r = (y1192 + 1634 * v);
-					int g = (y1192 - 833 * v - 400 * u);
-//				    int b = (y1192 + 2066 * u);
-					int b = (y1192 + 1634 * v);
-
-					if (r < 0) r = 0; else if (r > 262143) r = 262143;
-					if (g < 0) g = 0; else if (g > 262143) g = 262143;
-					if (b < 0) b = 0; else if (b > 262143) b = 262143;
-
-					rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
-				}
-			}
-		}
-
+	public ProcessedView(Context context) {
+		super(context);
+		processing = false;
+		rgb = new int[0];
+		data = new byte[0];
+		mPaint = new Paint();
 	}
 
+	private YUVProcessor mYUVProcessor;
+	public void setYUVProcessor(YUVProcessor yuvProcessor) {
+		mYUVProcessor = yuvProcessor;
+	}
+
+	// Sent over from PreviewSurface whenever the size is changed; could be pulled from camera in onPreviewFrame, but 
+	// that would be more frequent checking than necessary.
+	private Size previewImageSize;
+	public void setPreviewImageSize(Size previewImageSize) {
+		this.previewImageSize = previewImageSize;
+	}
+
+	@Override
+	public void onPreviewFrame(byte[] data, Camera camera) {		
+		loadNV21(data);
+	}
+
+	public void loadNV21(byte[] bytearray) {
+		if (processing) return;
+		processing = true;
+
+		if (data.length != bytearray.length) data = new byte[bytearray.length];
+		System.arraycopy(bytearray, 0, data, 0, bytearray.length);
+
+		invalidate();
+	}
+
+
+	static final boolean showFPS = true;
+	private Bitmap bmp;
+	private long lastFrame = System.currentTimeMillis();
+
+	@Override
+	protected void onDraw(Canvas canvas) {
+		if (data.length == 0) return;
+
+		int w = previewImageSize.width;
+		int h = previewImageSize.height;
+
+		if (rgb.length != w*h) rgb = new int[w*h];
+		mYUVProcessor.processYUV420SP(rgb, data, w, h);
+		bmp = Bitmap.createBitmap(rgb, w, h, Bitmap.Config.RGB_565);
+		canvas.drawBitmap(bmp, 0, 0, null);
+
+		if (showFPS) {
+			canvas.drawText(Double.toString(1000 / (System.currentTimeMillis() - lastFrame)) + " FPS", 50, 50, mPaint);
+			lastFrame = System.currentTimeMillis();
+		}
+
+		processing = false;
+	}
 }

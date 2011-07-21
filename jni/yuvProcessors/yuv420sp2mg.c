@@ -1,7 +1,7 @@
 #include <jni.h>
 #include <android/log.h>
 
-#define  LOG_TAG    "libyuv420sp2rgb"
+#define  LOG_TAG    "libyuv420sp2mg"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
@@ -83,28 +83,24 @@ static void color_convert_common(
         for (i = 0; i < height; i++) {
             for (j = 0; j < width; j++) {
                 nY = *(pY + i * width + j);
-                nV = *(pUV + (i/2) * width + bytes_per_pixel * (j/2));
-                nU = *(pUV + (i/2) * width + bytes_per_pixel * (j/2) + 1);
+                nU = *(pUV + (i*width + bytes_per_pixel*j)/2 + 1);
+                nV = *(pUV + (i*width + bytes_per_pixel*j)/2);
             
                 // Yuv Convert
                 nY -= 16;
                 nU -= 128;
                 nV -= 128;
+            	
+                if (nY < 0) nY = 0;
+
+				int nY1192 = 1192 * nY;                        
+                nR = (int)(nY1192 + 1634 * nV);
+                nG = (int)(nY1192 - 833  * nV -  400 * nU);
+                nB = (int)(nY1192 +             2066 * nU);
             
-                if (nY < 0)
-                    nY = 0;
-            
-                // nR = (int)(1.164 * nY + 2.018 * nU);
-                // nG = (int)(1.164 * nY - 0.813 * nV - 0.391 * nU);
-                // nB = (int)(1.164 * nY + 1.596 * nV);
-            
-                nB = (int)(1192 * nY + 2066 * nU);
-                nG = (int)(1192 * nY - 833 * nV - 400 * nU);
-                nR = (int)(1192 * nY + 1634 * nV);
-            
-                nR = min(262143, max(0, nR));
-                nG = min(262143, max(0, nG));
-                nB = min(262143, max(0, nB));
+            	if (nR < 0) nR = 0; else if (nR > 262143) nR = 262143;
+            	if (nG < 0) nG = 0; else if (nG > 262143) nG = 262143;
+            	if (nB < 0) nB = 0; else if (nB > 262143) nB = 262143;
             
                 nR >>= 10; nR &= 0xff;
                 nG >>= 10; nG &= 0xff;
@@ -181,7 +177,7 @@ static void argb_cb(
     return common_rgb_cb(r,g,b,ctx,1);
 }
 
-JNIEXPORT void JNICALL Java_li_peterandpatty_colanomalous_ColActivity_decodeYUV420SP(JNIEnv * env, jobject obj, jintArray rgb, jbyteArray yuv420sp, jint width, jint height, jint type)
+JNIEXPORT void JNICALL Java_li_peterandpatty_colanomalous_NativeRGB2MG_processYUV(JNIEnv * env, jobject obj, jintArray rgb, jbyteArray yuv420sp, jint width, jint height, jint type)
 {
     void *in, *out;
     int psz = getpagesize();
