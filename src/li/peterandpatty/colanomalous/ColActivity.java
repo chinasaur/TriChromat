@@ -2,6 +2,7 @@ package li.peterandpatty.colanomalous;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -32,11 +33,14 @@ public class ColActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+		SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+
 		mProcessedView = new ProcessedView(this); 
-		mProcessedView.setYUVProcessor(new RGB2MG());
 		mPreviewSurface = new PreviewSurface(this, mProcessedView);
 
+		String processingMode = preferences.getString("ProcessingMode", null);
+		mProcessedView.setYUVProcessor(processingMode);
+				
 		setContentView(R.layout.main);
 		mFrame = (FrameLayout) findViewById(R.id.frame);		
 		mFrame.addView(mPreviewSurface);
@@ -58,6 +62,9 @@ public class ColActivity extends Activity {
             return true;
         case R.id.set_preview_processing_mode:
         	showPreviewProcessingModeMenu();
+        	return true;
+        case R.id.quit:
+        	finish();
         	return true;
         default:
             return super.onOptionsItemSelected(item);
@@ -106,17 +113,27 @@ public class ColActivity extends Activity {
     	return previewProcessingModeMenu;
     }
 
-    private final YUVProcessor[] yuvProcessors = new YUVProcessor[]{new RGB2MG(), new RGB2RC(), new NativeRGB2MG()};
     private ListView buildPreviewProcessingModeMenu() {
         ListView lv = new ListView(this);
-        lv.setAdapter(new ArrayAdapter<YUVProcessor>(this, android.R.layout.simple_list_item_1, yuvProcessors));
+        lv.setAdapter(new ArrayAdapter<YUVProcessor>(this, android.R.layout.simple_list_item_1, YUVProcessor.YUV_PROCESSORS));
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            	mProcessedView.setYUVProcessor(yuvProcessors[position]);
+            	mProcessedView.setYUVProcessor(YUVProcessor.YUV_PROCESSORS[position]);
             	setContentView(mFrame);
             }
         });
         return lv;    	
+    }
+    
+    @Override
+    protected void onPause() {
+      super.onPause();
+      
+      SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+      SharedPreferences.Editor editor = preferences.edit();
+
+      editor.putString("ProcessingMode", mProcessedView.getYUVProcessor().getName());
+      editor.commit();
     }
 }
 
@@ -247,6 +264,11 @@ class ProcessedView extends View implements Camera.PreviewCallback {
 	}
 
 
+	public void setYUVProcessor(String processorName) {
+		setYUVProcessor(YUVProcessor.find(processorName));
+	}
+
+
 	// Sent over from PreviewSurface whenever the size is changed; could be pulled from camera in onPreviewFrame, but 
 	// that would be more frequent checking than necessary.
 	private Size previewImageSize;
@@ -260,9 +282,10 @@ class ProcessedView extends View implements Camera.PreviewCallback {
 
 	
 	private YUVProcessor mYUVProcessor;
-	public void setYUVProcessor(YUVProcessor yuvProcessor) {
+	void setYUVProcessor(YUVProcessor yuvProcessor) {
 		mYUVProcessor = yuvProcessor;
 	}
+	YUVProcessor getYUVProcessor() { return mYUVProcessor; }
 
 	
 	@Override

@@ -15,6 +15,7 @@ public final class R {
     }
     public static final class id {
         public static final int frame=0x7f060000;
+        public static final int quit=0x7f060003;
         public static final int set_preview_processing_mode=0x7f060002;
         public static final int set_preview_size=0x7f060001;
     }
@@ -26,6 +27,7 @@ public final class R {
     }
     public static final class string {
         public static final int app_name=0x7f040000;
+        public static final int quit=0x7f040003;
         public static final int set_preview_processing_mode=0x7f040002;
         public static final int set_preview_size=0x7f040001;
     }

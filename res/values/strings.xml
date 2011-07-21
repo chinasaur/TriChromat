@@ -3,4 +3,5 @@
     <string name="app_name">Colanomalous</string>
     <string name="set_preview_size">Set preview size</string>
     <string name="set_preview_processing_mode">Set color mode</string>
+    <string name="quit">Quit</string>
 </resources>

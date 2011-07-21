@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="@string/set_preview_size" android:id="@+id/set_preview_size"></item><item android:title="@string/set_preview_processing_mode" android:id="@+id/set_preview_processing_mode"></item>
+    <item android:title="@string/set_preview_size" android:id="@+id/set_preview_size"></item><item android:title="@string/set_preview_processing_mode" android:id="@+id/set_preview_processing_mode"></item><item android:title="@string/quit" android:id="@+id/quit"></item>
+    
     
 </menu>
