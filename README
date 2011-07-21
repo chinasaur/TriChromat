@@ -6,6 +6,9 @@ Currently there are two transformations implemented, one that copies the red cha
 Which transformation is more helpful to you will depend on the type of colorblindness you have.  I am protonopic (missing red cones) so for me the RGB2MG transform is most helpful.  This type of transformation of course loses the blue information, but I find it is very helpful for reading graphs and other figures that use too much red/green.
 
 
+Currently, all menus are implemented within the main Activity.  So you cannot get out of a menu with the back button.  This will be fixed in future.
+
+
 I have tried to design the application to be easily extensible with additional image transformations.  Since it is open source, this means you can easily fork it and make your own version.  
 
 I am also hoping that it will be possible to support a pure plugin model where a user can install Colanomalous and an external APK with additional transformations and Colanomalous will be able to load in the additional transformations.  In this model, you would not even need to fork and redistribute a new camera filter app, you would only need to implement the interface YUVProcessor and then distribute that code as its own APK.
