@@ -1,0 +1,11 @@
+Colanomalous is a basic camera preview filter for Android, designed to help colorblind users detect colors they normally would have difficulty detecting.
+
+Currently there are two transformations implemented, one that copies the red channel into the blue channel (RedGreenBlue to MagentaBlue), and one that copies the green channel into the blue channel (RedGreenBlue to RedCyan).  Which transformation is more helpful to you will depend on the type of colorblindness you have.  I am protonopic (missing red cones) so for me the RGB2MG transform is most helpful.  This type of transformation of course loses the blue information, but I find it is very helpful for reading graphs and other figures that use too much red/green.
+
+I have tried to design the application to be easily extensible with additional image transformations.  Since it is open source, this means you can easily fork it and make your own version.  
+
+I am also hoping that it will be possible to support a pure plugin model where a user can install Colanomalous and an external APK with additional transformations and Colanomalous will be able to load in the additional transformations.  In this model, you would not even need to fork and redistribute a new camera filter app, you would only need to implement the interface YUVProcessor and then distribute that code as its own APK.
+
+I believe it should be possible to get this working using Intents to discover additional transformations and DexClassLoader to bring the code in, but I'm not sure; this will take some more work.
+
+I have experimented with using AndroidNDK to implement the transformation in native C++ code.  Thus far this is not working (image looks weird) and it is also not any faster than the pure Java implmentation.  I just pulled the implementation for this from another open source project online, so I am looking for other sources of canned code for this.  If I find more time I may try to implement this myself in future.
