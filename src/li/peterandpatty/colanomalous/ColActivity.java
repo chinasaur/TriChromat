@@ -9,35 +9,122 @@ import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
+import android.widget.ListView;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ColActivity extends Activity {	
+	private FrameLayout mFrame;
+	private ProcessedView mProcessedView;
+	private PreviewSurface mPreviewSurface;
 	
-    @Override
+	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		ProcessedView  mProcessedView  = new ProcessedView(this); 
+		mProcessedView = new ProcessedView(this); 
 		mProcessedView.setYUVProcessor(new RGB2MG());
-		PreviewSurface mPreviewSurface = new PreviewSurface(this, mProcessedView);
+		mPreviewSurface = new PreviewSurface(this, mProcessedView);
 
 		setContentView(R.layout.main);
-		FrameLayout mFrame = (FrameLayout) findViewById(R.id.frame);		
+		mFrame = (FrameLayout) findViewById(R.id.frame);		
 		mFrame.addView(mPreviewSurface);
 		mFrame.addView(mProcessedView);
 	}
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.options_menu, menu);
+        return true;
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case R.id.set_preview_size:
+        	showPreviewSizeMenu();
+            return true;
+        case R.id.set_preview_processing_mode:
+        	showPreviewProcessingModeMenu();
+        	return true;
+        default:
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    
+    private void showPreviewSizeMenu() {
+        setContentView(getPreviewSizeMenu());
+    }
+
+    ListView previewSizeMenu;
+    private ListView getPreviewSizeMenu() {
+    	if (previewSizeMenu == null) previewSizeMenu = buildPreviewSizeMenu();
+    	return previewSizeMenu;
+    }
+    
+    private ListView buildPreviewSizeMenu() {
+    	final List<Size> previewSizes = mPreviewSurface.getSupportedPreviewSizes();
+    	String[] previewSizeNames = new String[previewSizes.size()];
+    	for (int i = 0; i < previewSizes.size(); i++) {
+    		Size size = previewSizes.get(i);
+    		previewSizeNames[i] = size.width + "x" + size.height;
+    	}
+    	
+        ListView lv = new ListView(this);
+        lv.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, previewSizeNames));
+        lv.setOnItemClickListener(new OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            	mPreviewSurface.setPreviewSize(previewSizes.get(position));
+            	setContentView(mFrame);
+            }
+        });
+
+        return lv;
+    }
+
+    
+    private void showPreviewProcessingModeMenu() {
+        setContentView(getPreviewProcessingModeMenu());	
+    }
+    
+    private ListView previewProcessingModeMenu;
+    private ListView getPreviewProcessingModeMenu() {
+    	if (previewProcessingModeMenu == null) previewProcessingModeMenu = buildPreviewProcessingModeMenu();
+    	return previewProcessingModeMenu;
+    }
+
+    private final YUVProcessor[] yuvProcessors = new YUVProcessor[]{new RGB2MG(), new RGB2RC(), new NativeRGB2MG()};
+    private ListView buildPreviewProcessingModeMenu() {
+        ListView lv = new ListView(this);
+        lv.setAdapter(new ArrayAdapter<YUVProcessor>(this, android.R.layout.simple_list_item_1, yuvProcessors));
+        lv.setOnItemClickListener(new OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            	mProcessedView.setYUVProcessor(yuvProcessors[position]);
+            	setContentView(mFrame);
+            }
+        });
+        return lv;    	
+    }
 }
+
 
 class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {	
 	private final SurfaceHolder mHolder;
 	private Camera mCamera;
 	private final ProcessedView mProcessedView;
-
 	
 	PreviewSurface(Context context, ProcessedView processedView) {
 		super(context);
@@ -51,11 +138,21 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 	}
 
 	
+	private List<Size> supportedPreviewSizes;
+	public List<Size> getSupportedPreviewSizes() {
+		return supportedPreviewSizes;
+	}
+	
+	
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
 		// The Surface has been created, acquire the camera and tell it where to draw.
 		mCamera = Camera.open();
 		try {
+			// This needs to be available to the preview size menu
+			Camera.Parameters parameters = mCamera.getParameters();
+			supportedPreviewSizes = parameters.getSupportedPreviewSizes();
+
 			mCamera.setPreviewDisplay(holder);
 		} catch (IOException exception) {
 			mCamera.release();
@@ -75,6 +172,13 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 		mCamera = null;
 	}
 
+	
+	private Size previewSize;
+	public void setPreviewSize(Size previewSize) {
+		this.previewSize = previewSize;
+	}
+	
+	
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 		mCamera.setPreviewCallback(null);
@@ -82,19 +186,12 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 		
 		// Now that the size is known, set up the camera parameters and begin the preview.
 		Camera.Parameters mParameters = mCamera.getParameters();
-
-		// This needs to be fixed to handle landscape orientation correctly.
-		// Also would be nice to give user control.
-//		List<Size> sizes = mParameters.getSupportedPreviewSizes();
-//		if (sizes != null && !sizes.isEmpty()) {
-//			Size optimalSize = getOptimalPreviewSize(sizes, w, h);
-//			mParameters.setPreviewSize(optimalSize.width, optimalSize.height);
-//		}
-		Size previewImageSize = mParameters.getPreviewSize();
-
-		mProcessedView.setPreviewImageSize(previewImageSize);
 		
-//		mCamera.setParameters(mParameters);
+		if (previewSize == null) previewSize = mParameters.getPreviewSize();
+		mParameters.setPreviewSize(previewSize.width, previewSize.height);
+		mCamera.setParameters(mParameters);
+		mProcessedView.reset(previewSize);
+
 		mCamera.setPreviewCallback(mProcessedView);
 		mCamera.startPreview();
 	}
@@ -138,31 +235,36 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 
 
 class ProcessedView extends View implements Camera.PreviewCallback {
+	private final Paint mPaint;
+	
 	private boolean processing;
 	private byte[] data;
 	private int[] rgb;
-	private final Paint mPaint;
 
 	public ProcessedView(Context context) {
 		super(context);
-		processing = false;
-		rgb = new int[0];
-		data = new byte[0];
 		mPaint = new Paint();
 	}
 
+
+	// Sent over from PreviewSurface whenever the size is changed; could be pulled from camera in onPreviewFrame, but 
+	// that would be more frequent checking than necessary.
+	private Size previewImageSize;
+
+	public void reset(Size previewImageSize) {
+		processing = false;
+		rgb = new int[0];
+		data = new byte[0];
+		this.previewImageSize = previewImageSize;
+	}
+
+	
 	private YUVProcessor mYUVProcessor;
 	public void setYUVProcessor(YUVProcessor yuvProcessor) {
 		mYUVProcessor = yuvProcessor;
 	}
 
-	// Sent over from PreviewSurface whenever the size is changed; could be pulled from camera in onPreviewFrame, but 
-	// that would be more frequent checking than necessary.
-	private Size previewImageSize;
-	public void setPreviewImageSize(Size previewImageSize) {
-		this.previewImageSize = previewImageSize;
-	}
-
+	
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera) {		
 		loadNV21(data);
@@ -179,7 +281,7 @@ class ProcessedView extends View implements Camera.PreviewCallback {
 	}
 
 
-	static final boolean showFPS = true;
+	static final boolean showDebugging = true;
 	private Bitmap bmp;
 	private long lastFrame = System.currentTimeMillis();
 
@@ -195,8 +297,9 @@ class ProcessedView extends View implements Camera.PreviewCallback {
 		bmp = Bitmap.createBitmap(rgb, w, h, Bitmap.Config.RGB_565);
 		canvas.drawBitmap(bmp, 0, 0, null);
 
-		if (showFPS) {
-			canvas.drawText(Double.toString(1000 / (System.currentTimeMillis() - lastFrame)) + " FPS", 50, 50, mPaint);
+		if (showDebugging) {
+			String debugString = Double.toString(1000 / (System.currentTimeMillis() - lastFrame)) + " FPS, " + w + "x" + h;
+			canvas.drawText(debugString, 50, 50, mPaint);
 			lastFrame = System.currentTimeMillis();
 		}
 

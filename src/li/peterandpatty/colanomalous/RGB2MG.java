@@ -6,7 +6,7 @@ package li.peterandpatty.colanomalous;
  *
  * @author Peter
  */
-public class RGB2MG implements YUVProcessor {
+public class RGB2MG extends YUVProcessor {
 
 	@Override
 	public void processYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {
@@ -36,4 +36,8 @@ public class RGB2MG implements YUVProcessor {
 		}
 	}
 
+	@Override
+	public String getName() {
+		return "RedGreenBlue to MagentaGreen";
+	}
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Colanomalous</string>
-    <string name="preview_format">Preview format</string>
+    <string name="set_preview_size">Set preview size</string>
+    <string name="set_preview_processing_mode">Set color mode</string>
 </resources>
