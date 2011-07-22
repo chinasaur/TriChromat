@@ -41,6 +41,14 @@ class ProcessedView extends View implements Camera.PreviewCallback {
 	void setYUVProcessor(YUVProcessor yuvProcessor) { mYUVProcessor = yuvProcessor; }
 	YUVProcessor getYUVProcessor() { return mYUVProcessor; }
 	
+	int currentYUVProcessor() {
+		for (int i = 0; i < YUVProcessor.YUV_PROCESSORS.length; i++) {
+			YUVProcessor yp = YUVProcessor.YUV_PROCESSORS[i];
+			if (yp == mYUVProcessor) return i;
+		}
+		throw new Error("This should never happen");
+	}
+	
 	
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera) { 

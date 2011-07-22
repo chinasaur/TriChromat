@@ -7,7 +7,6 @@ import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Size;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -94,8 +93,6 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 		// Check focusMode, if invalid just use what the camera wanted
 		if (focusMode == null)          setFocusMode(mParameters.getFocusMode());
 		if (!validFocusMode(focusMode)) setFocusMode(mParameters.getFocusMode());		
-		Log.i("FocusMode", focusMode);
-		Log.i("FocusMode", Boolean.toString(canAutoFocus()));
 		
 		// Set preview size, focus mode, notify camera
 		mParameters.setPreviewSize(previewWidth, previewHeight);
@@ -122,6 +119,20 @@ class PreviewSurface extends SurfaceView implements SurfaceHolder.Callback {
 		for (String m : supportedFocusModes)
 			if (m.equals(mode)) return true;
 		return false;
+	}
+	
+	int currentPreviewSizeIndex() {
+		for (int i = 0; i < supportedPreviewSizes.size(); i++) {
+			Size sps = supportedPreviewSizes.get(i);
+			if (sps.width == previewWidth && sps.height == previewHeight) return i;
+		}
+		throw new Error("This should never happen");
+	}
+	
+	int currentFocusModeIndex() {
+		for (int i = 0; i < supportedFocusModes.size(); i++)
+			if (supportedFocusModes.get(i).equals(focusMode)) return i;
+		throw new Error("This should never happen");
 	}
 	
 	void autoFocus(AutoFocusCallback cb) {

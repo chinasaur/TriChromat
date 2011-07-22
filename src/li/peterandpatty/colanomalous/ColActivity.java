@@ -13,6 +13,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.util.List;
 
@@ -95,15 +96,25 @@ public class ColActivity extends Activity {
     }
 
     private void buildFocusModeMenu() {
-    	final List<String> focusModes = mPreviewSurface.getSupportedFocusModes();
     	ListView lv = new ListView(this);
-    	lv.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, focusModes));
+
+    	TextView header = new TextView(this);
+    	header.setText(getString(R.string.set_focus_mode));
+    	lv.addHeaderView(header);
+    	final int positionOffset = 1;
+
+    	final List<String> focusModes = mPreviewSurface.getSupportedFocusModes();
+    	lv.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, focusModes));
+    	lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+    	lv.setItemChecked(mPreviewSurface.currentFocusModeIndex()+positionOffset, true);
+    	
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            	mPreviewSurface.setFocusMode(focusModes.get(position));
+            	mPreviewSurface.setFocusMode(focusModes.get(position-positionOffset));
             	exitMenu();
             }
         });
+
         focusModeMenu = lv;
     }
     
@@ -120,18 +131,29 @@ public class ColActivity extends Activity {
     }
     
     private void buildPreviewSizeMenu() {
+        ListView lv = new ListView(this);
+        
+    	TextView header = new TextView(this);
+    	header.setText(getString(R.string.set_preview_size));
+    	lv.addHeaderView(header);
+    	final int positionOffset = 1;
+    	
     	final List<Size> previewSizes = mPreviewSurface.getSupportedPreviewSizes();
     	String[] previewSizeNames = new String[previewSizes.size()];
     	for (int i = 0; i < previewSizes.size(); i++) {
     		Size size = previewSizes.get(i);
     		previewSizeNames[i] = size.width + "x" + size.height;
     	}
+        lv.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, previewSizeNames));
+    	lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
     	
-        ListView lv = new ListView(this);
-        lv.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, previewSizeNames));
+    	int selectedPosition = mPreviewSurface.currentPreviewSizeIndex() + positionOffset;
+    	lv.setItemChecked(selectedPosition, true);
+    	lv.setSelection(selectedPosition);
+        
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            	mPreviewSurface.setPreviewSize(previewSizes.get(position));
+            	mPreviewSurface.setPreviewSize(previewSizes.get(position-positionOffset));
             	exitMenu();
             }
         });
@@ -153,10 +175,19 @@ public class ColActivity extends Activity {
 
     private void buildPreviewProcessingModeMenu() {
         ListView lv = new ListView(this);
-        lv.setAdapter(new ArrayAdapter<YUVProcessor>(this, android.R.layout.simple_list_item_1, YUVProcessor.YUV_PROCESSORS));
+
+        TextView header = new TextView(this);
+    	header.setText(getString(R.string.set_preview_processing_mode));
+    	lv.addHeaderView(header);
+    	final int positionOffset = 1;
+    	
+        lv.setAdapter(new ArrayAdapter<YUVProcessor>(this, android.R.layout.simple_list_item_single_choice, YUVProcessor.YUV_PROCESSORS));
+    	lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+    	lv.setItemChecked(mProcessedView.currentYUVProcessor()+positionOffset, true);
+        
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            	mProcessedView.setYUVProcessor(YUVProcessor.YUV_PROCESSORS[position]);
+            	mProcessedView.setYUVProcessor(YUVProcessor.YUV_PROCESSORS[position-positionOffset]);
             	exitMenu();
             }
         });
