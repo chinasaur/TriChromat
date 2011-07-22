@@ -56,6 +56,9 @@ public class ColActivity extends Activity {
     	return true;
     }
     
+    
+    private boolean inMenu = false;
+    
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -81,6 +84,7 @@ public class ColActivity extends Activity {
 
     
     private void showFocusModeMenu() {
+    	inMenu = true;
     	setContentView(getFocusModeMenu());
     }
     
@@ -97,7 +101,7 @@ public class ColActivity extends Activity {
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             	mPreviewSurface.setFocusMode(focusModes.get(position));
-            	setContentView(mFrame);
+            	exitMenu();
             }
         });
         focusModeMenu = lv;
@@ -105,6 +109,7 @@ public class ColActivity extends Activity {
     
     
     private void showPreviewSizeMenu() {
+    	inMenu = true;
         setContentView(getPreviewSizeMenu());
     }
 
@@ -127,7 +132,7 @@ public class ColActivity extends Activity {
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             	mPreviewSurface.setPreviewSize(previewSizes.get(position));
-            	setContentView(mFrame);
+            	exitMenu();
             }
         });
 
@@ -136,6 +141,7 @@ public class ColActivity extends Activity {
 
     
     private void showPreviewProcessingModeMenu() {
+    	inMenu = true;
         setContentView(getPreviewProcessingModeMenu());	
     }
     
@@ -151,10 +157,23 @@ public class ColActivity extends Activity {
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             	mProcessedView.setYUVProcessor(YUVProcessor.YUV_PROCESSORS[position]);
-            	setContentView(mFrame);
+            	exitMenu();
             }
         });
         previewProcessingModeMenu = lv;    	
+    }
+    
+    
+    @Override
+    public void onBackPressed() {
+    	if (inMenu) exitMenu();
+    	else finish();
+    }
+    
+    
+    private void exitMenu() {
+    	setContentView(mFrame);
+    	inMenu = false;
     }
 
     
