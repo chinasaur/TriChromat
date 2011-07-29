@@ -1,4 +1,4 @@
-package li.peterandpatty.colanomalous;
+package li.peterandpatty.trichromat;
 
 import java.io.IOException;
 import java.util.List;

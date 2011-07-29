@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Colanomalous</string>
+    <string name="app_name">TriChromat</string>
     <string name="focus_now">Focus Now</string>
     <string name="set_focus_mode">Set Focus Mode</string>
     <string name="set_preview_size">Set Preview Size</string>

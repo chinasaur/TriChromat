@@ -1,4 +1,4 @@
-package li.peterandpatty.colanomalous;
+package li.peterandpatty.trichromat;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
@@ -17,7 +17,9 @@ import android.widget.TextView;
 
 import java.util.List;
 
-public class ColActivity extends Activity {	
+import li.peterandpatty.trichromat.R;
+
+public class TriChroActivity extends Activity {	
 	private FrameLayout mFrame;
 	private ProcessedView mProcessedView;
 	private PreviewSurface mPreviewSurface;

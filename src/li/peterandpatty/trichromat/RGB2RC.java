@@ -1,12 +1,12 @@
-package li.peterandpatty.colanomalous;
+package li.peterandpatty.trichromat;
 
 /**
- * RedGreenBlue to MagentaGreen
- * Simply copies the Red channel into the Blue channel; helpful for protanopes
- *
+ * RedGreenBlue to RedCyan
+ * Simply copies the Green channel into the Blue channel; helpful for deuteranopes
+ * 
  * @author Peter
  */
-public class RGB2MG extends YUVProcessor {
+public class RGB2RC extends YUVProcessor {
 
 	@Override
 	public void processYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {
@@ -25,19 +25,19 @@ public class RGB2MG extends YUVProcessor {
 				int y1192 = 1192 * y;
 				int r = (y1192 + 1634 * v);
 				int g = (y1192 - 833 * v - 400 * u);
-//				int b = (y1192 + 2066 * u);
+//			    int b = (y1192 + 2066 * u);
 
 				if (r < 0) r = 0; else if (r > 262143) r = 262143;
 				if (g < 0) g = 0; else if (g > 262143) g = 262143;
 //				if (b < 0) b = 0; else if (b > 262143) b = 262143;
 
-				rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((r >> 10) & 0xff);
+				rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((g >> 10) & 0xff);
 			}
 		}
 	}
 
 	@Override
 	public String getName() {
-		return "RedGreenBlue to MagentaGreen";
+		return "RedGreenBlue to RedCyan";
 	}
 }

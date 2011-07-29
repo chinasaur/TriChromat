@@ -1,4 +1,4 @@
-package li.peterandpatty.colanomalous;
+package li.peterandpatty.trichromat;
 
 public class NativeRGB2MG extends YUVProcessor {
     static { System.loadLibrary("yuv420sp2mg"); }

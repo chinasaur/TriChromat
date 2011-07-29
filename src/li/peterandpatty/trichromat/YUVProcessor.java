@@ -1,4 +1,4 @@
-package li.peterandpatty.colanomalous;
+package li.peterandpatty.trichromat;
 
 import java.util.Arrays;
 
